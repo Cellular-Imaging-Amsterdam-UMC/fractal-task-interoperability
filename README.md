@@ -50,9 +50,16 @@ task parameter schema.
 ### Nextflow example
 
 Orchestrates the task via Nextflow, using the same CLI interface.
-Each `zarr_url` becomes a Nextflow channel item; on a multi-well dataset
-the segmentation processes would run in parallel — exactly as Fractal Server
-distributes tasks across its worker pool.
+Each entry in `zarr_urls` becomes a Nextflow channel item and runs as an
+independent parallel job — exactly as Fractal Server distributes parallel
+tasks across its worker pool.
+
+Task parameters are supplied via a YAML params file:
+
+| File | Purpose |
+|------|---------|
+| [`examples/nextflow/params.yml`](examples/nextflow/params.yml) | Template with all manifest defaults (auto-generated from `__FRACTAL_MANIFEST__.json` via `pixi run generate-nextflow-params`) |
+| [`examples/nextflow/params_example.yml`](examples/nextflow/params_example.yml) | Demo configuration used by `pixi run cpsam-nextflow` |
 
 **Option A — via pixi** (no separate Nextflow install needed):
 ```bash
@@ -66,7 +73,8 @@ launching Nextflow.
 # Stage the dataset first
 pixi run download-nextflow-data
 # Then run the pipeline
-nextflow run examples/nextflow/main.nf -profile pixi
+nextflow run examples/nextflow/main.nf -profile pixi \
+    -params-file examples/nextflow/params_example.yml
 ```
 
 In both cases, `-profile pixi` tells Nextflow to use the pixi-managed conda

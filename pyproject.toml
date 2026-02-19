@@ -12,7 +12,7 @@ packages = ["src/fractal_cellpose_sam_orchestrators"]
 
 # Project metadata (see https://peps.python.org/pep-0621)
 [project]
-name = "fractal-cellpose-sam-orchestrators"
+name = "fractal-task-interoperability"
 dynamic = ["version"]
 description = "Proof-of-concept: run the Fractal Cellpose-SAM task in workflow orchestrators"
 readme = "README.md"
@@ -73,7 +73,7 @@ platforms = ["osx-arm64", "linux-64"]
 
 # In this repo, we install *this* package editable plus the task package from Git.
 [tool.pixi.pypi-dependencies]
-fractal-cellpose-sam-orchestrators = { path = ".", editable = true }
+fractal-task-interoperability = { path = ".", editable = true }
 
 # Fractal Cellpose SAM task
 fractal-cellpose-sam-task = { git = "https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task", tag = "v0.1.9" }
@@ -106,8 +106,9 @@ format-code = { cmd = ["ruff", "format", "."], default-environment = "dev" }
 
 cpsam-python = { cmd = ["python", "examples/python/run_cellpose_sam_python_script.py"] }
 cpsam-cli = { cmd = ["bash", "examples/cli/run_cellpose_sam_cli.sh"] }
+generate-nextflow-params = { cmd = ["python", "scripts/generate_nextflow_params.py"] }
 download-nextflow-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_nextflow"] }
-cpsam-nextflow = { cmd = ["nextflow", "run", "examples/nextflow/main.nf", "-profile", "pixi"], default-environment = "nextflow", depends-on = ["download-nextflow-data"] }
+cpsam-nextflow = { cmd = ["nextflow", "run", "examples/nextflow/main.nf", "-profile", "pixi", "-params-file", "examples/nextflow/params_example.yml"], default-environment = "nextflow", depends-on = ["download-nextflow-data"] }
 
 test = { cmd = ["pytest", "./tests/"], default-environment = "dev" }
 

@@ -1,0 +1,21 @@
+# Nextflow parameter file for the demo run
+#
+# zarr_urls: full paths to OME-Zarr images to segment.
+# Each entry becomes one parallel Nextflow job — mirroring how Fractal Server
+# distributes tasks across its worker pool.
+zarr_urls:
+  - "data_nextflow/20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr/B/03/0"
+
+# ── Task parameters (overrides of the manifest defaults in params.yml) ────────
+
+label_name: "nuclei_nextflow"
+
+channels:
+  mode: "label"
+  identifiers:
+    - "DAPI"
+
+# Use resolution level 2 (downsampled) for faster demo runs.
+level_path: "2"
+
+overwrite: true

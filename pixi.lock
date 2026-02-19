@@ -1764,20 +1764,6 @@ packages:
   purls: []
   size: 4059
   timestamp: 1762351264405
-- pypi: ./
-  name: fractal-cellpose-sam-orchestrators
-  version: 0.1.dev2+g215fb97f4.d20260219
-  sha256: 03d6d701c472664e6a95826502827aa6c8273be8b303da383b40696170373482
-  requires_dist:
-  - pooch
-  - requests
-  - jsonschema ; extra == 'dev'
-  - pre-commit ; extra == 'dev'
-  - pytest ; extra == 'dev'
-  - ruff ; extra == 'dev'
-  - jsonschema ; extra == 'test'
-  - pytest ; extra == 'test'
-  requires_python: '>=3.11,<3.15'
 - pypi: git+https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task?tag=v0.1.9#bb2d771b2d613c45bd32bf126810b9f3dcdceeac
   name: fractal-cellpose-sam-task
   version: 0.1.9
@@ -1800,6 +1786,20 @@ packages:
   - jsonschema ; extra == 'test'
   - pytest ; extra == 'test'
   - requests ; extra == 'test'
+  requires_python: '>=3.11,<3.15'
+- pypi: ./
+  name: fractal-task-interoperability
+  version: 0.1.dev3+g960e6030d.d20260219
+  sha256: abd8d9a455935e6a894bb18df93a376c7428729e72e399c6fd32cf43e782c390
+  requires_dist:
+  - pooch
+  - requests
+  - jsonschema ; extra == 'dev'
+  - pre-commit ; extra == 'dev'
+  - pytest ; extra == 'dev'
+  - ruff ; extra == 'dev'
+  - jsonschema ; extra == 'test'
+  - pytest ; extra == 'test'
   requires_python: '>=3.11,<3.15'
 - pypi: https://files.pythonhosted.org/packages/25/ca/94c12cf29efaf1465035d5a8b54cbffd24f16a8e39320b6b30bcc53ae452/fractal_task_tools-0.3.0-py3-none-any.whl
   name: fractal-task-tools
