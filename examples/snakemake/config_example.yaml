@@ -1,0 +1,21 @@
+# Snakemake config for the demo run
+#
+# zarr_urls: full paths to OME-Zarr images to segment.
+# Each entry becomes one independent Snakemake job — mirroring how Fractal
+# Server distributes tasks across its worker pool.
+zarr_urls:
+  - "data_snakemake/20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr/B/03/0"
+
+# ── Task parameters (overrides of the manifest defaults) ─────────────────────
+
+label_name: "nuclei_snakemake"
+
+channels:
+  mode: "label"
+  identifiers:
+    - "DAPI"
+
+# Use resolution level 2 (downsampled) for faster demo runs.
+level_path: "2"
+
+overwrite: true

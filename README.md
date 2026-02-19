@@ -20,6 +20,7 @@ each writing its output label into a separate data directory.
 | Python import | `examples/python/run_cellpose_sam_python_script.py` | `nuclei_python_script` | `data_python/` |
 | CLI | `examples/cli/run_cellpose_sam_cli.sh` | `nuclei_cli` | `data_cli/` |
 | Nextflow | `examples/nextflow/main.nf` | `nuclei_nextflow` | `data_nextflow/` |
+| Snakemake | `examples/snakemake/Snakefile` | `nuclei_snakemake` | `data_snakemake/` |
 
 ### Python import example
 
@@ -79,6 +80,33 @@ nextflow run examples/nextflow/main.nf -profile pixi \
 
 In both cases, `-profile pixi` tells Nextflow to use the pixi-managed conda
 environment (`.pixi/envs/default`) for the task processes.
+
+### Snakemake example
+
+Orchestrates the task via Snakemake, using the same CLI interface.
+Each entry in `zarr_urls` becomes an independent Snakemake job via an integer
+index wildcard.
+
+Task parameters are supplied via a YAML config file:
+[`examples/snakemake/config_example.yaml`](examples/snakemake/config_example.yaml)
+
+```bash
+pixi run cpsam-snakemake
+```
+The pixi task automatically downloads the dataset to `data_snakemake/` before
+launching Snakemake.
+
+Standalone (with Snakemake already installed):
+```bash
+pixi run download-snakemake-data
+snakemake --snakefile examples/snakemake/Snakefile --cores 1
+```
+
+To run on custom data, pass your own config:
+```bash
+snakemake --snakefile examples/snakemake/Snakefile --cores 4 \
+    --configfile my_config.yaml
+```
 
 ## Installation
 

@@ -1,0 +1,1 @@
+{"zarr_url": "data_snakemake/20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr/B/03/0", "channels": {"mode": "label", "identifiers": ["DAPI"]}, "label_name": "nuclei_snakemake", "overwrite": true, "level_path": "2"}

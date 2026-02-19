@@ -1,0 +1,91 @@
+"""Fractal Cellpose-SAM task — Snakemake example.
+
+Demonstrates that a Fractal-spec-compliant task can be orchestrated by
+Snakemake using the standard Fractal CLI interface:
+
+  python -m <task_module> --args-json <path> --out-json <path>
+
+The Fractal task spec defines parallel tasks as processing one OME-Zarr
+image (zarr_url) at a time.  Snakemake models this through rules: each entry
+in config["zarr_urls"] maps to one independent job via an integer index
+wildcard.  On a dataset with multiple wells/positions the jobs run in parallel
+(controlled by --cores) — exactly as Fractal Server distributes them across
+its worker pool.
+
+Usage (from the repo root, after `pixi install`):
+  pixi run cpsam-snakemake
+or:
+  snakemake --snakefile examples/snakemake/Snakefile --cores 1
+
+To use a custom config (override individual keys):
+  snakemake --snakefile examples/snakemake/Snakefile --cores 1 \\
+      --configfile my_config.yaml
+"""
+
+import json
+
+# Default config — override with --configfile on the command line.
+configfile: "examples/snakemake/config_example.yaml"
+
+ZARR_URLS = config["zarr_urls"]
+
+
+# ---------------------------------------------------------------------------
+# Helper: build the Fractal-spec args JSON for one image
+# ---------------------------------------------------------------------------
+def fractal_args(idx):
+    """Build the Fractal-spec args JSON for image *idx*.
+
+    zarr_url and channels are required.  All other parameters are included
+    only when explicitly set in the config (falling back to the task's own
+    manifest defaults otherwise).
+    """
+    args = {
+        "zarr_url": ZARR_URLS[idx],
+        "channels": config["channels"],
+    }
+    for key in [
+        "label_name", "overwrite", "level_path", "iterator_configuration",
+        "custom_model", "advanced_parameters", "pre_post_process",
+        "create_masking_roi_table",
+    ]:
+        if config.get(key) is not None:
+            args[key] = config[key]
+    return json.dumps(args)
+
+
+# ---------------------------------------------------------------------------
+# Target rule
+# ---------------------------------------------------------------------------
+rule all:
+    """Segment all images listed in config["zarr_urls"]."""
+    input:
+        expand(
+            "data_snakemake/results/job_{idx}.json",
+            idx=range(len(ZARR_URLS)),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Rule: run the Fractal Cellpose-SAM task via its CLI entry point
+# ---------------------------------------------------------------------------
+rule cellpose_sam_segmentation:
+    """Run the Fractal Cellpose-SAM segmentation task for one OME-Zarr image.
+
+    Each zarr_url entry in the config becomes one independent job —
+    mirroring how Fractal Server distributes parallel tasks across workers.
+    """
+    output:
+        "data_snakemake/results/job_{idx}.json",
+    params:
+        args_json=lambda wc: fractal_args(int(wc.idx)),
+    shell:
+        """
+        # Write the Fractal-spec args JSON for this image
+        echo '{params.args_json}' > args.json
+
+        # Invoke the task via the Fractal CLI interface
+        python -m fractal_cellpose_sam_task.cellpose_sam_segmentation_task \
+            --args-json args.json \
+            --out-json {output}
+        """

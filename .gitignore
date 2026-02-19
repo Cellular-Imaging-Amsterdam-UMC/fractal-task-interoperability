@@ -21,6 +21,8 @@ build/
 venv/
 .pytest_cache/
 .ruff_cache/
+__pycache__/
+*.py[cod]
 
 # ----------------
 # Nextflow
@@ -28,6 +30,11 @@ venv/
 .nextflow/
 .nextflow.log*
 work/
+
+# ----------------
+# Snakemake
+# ----------------
+.snakemake/
 
 # ----------------
 # macOS

@@ -92,11 +92,18 @@ channels = ["conda-forge", "bioconda"]
 [tool.pixi.feature.nextflow.dependencies]
 nextflow = "*"
 
+# Snakemake is installed from PyPI (not on conda-forge for osx-arm64).
+# It shares the default solve-group so it runs in the same Python environment
+# as the task — no separate conda: directive needed in the rules.
+[tool.pixi.feature.snakemake.pypi-dependencies]
+snakemake = "*"
+
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
 nextflow = { features = ["nextflow"], solve-group = "nextflow" }
+snakemake = { features = ["snakemake"], solve-group = "default" }
 
 [tool.pixi.tasks]
 install-pre-commit = { cmd = ["pre-commit", "install"], default-environment = "dev" }
@@ -109,6 +116,8 @@ cpsam-cli = { cmd = ["bash", "examples/cli/run_cellpose_sam_cli.sh"] }
 generate-nextflow-params = { cmd = ["python", "scripts/generate_nextflow_params.py"] }
 download-nextflow-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_nextflow"] }
 cpsam-nextflow = { cmd = ["nextflow", "run", "examples/nextflow/main.nf", "-profile", "pixi", "-params-file", "examples/nextflow/params_example.yml"], default-environment = "nextflow", depends-on = ["download-nextflow-data"] }
+download-snakemake-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_snakemake"] }
+cpsam-snakemake = { cmd = ["snakemake", "--snakefile", "examples/snakemake/Snakefile", "--cores", "1"], default-environment = "snakemake", depends-on = ["download-snakemake-data"] }
 
 test = { cmd = ["pytest", "./tests/"], default-environment = "dev" }
 
