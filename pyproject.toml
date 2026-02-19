@@ -1,0 +1,100 @@
+# https://peps.python.org/pep-0517/
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+# https://hatch.pypa.io/latest/config/metadata/
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fractal_cellpose_sam_orchestrators"]
+
+# Project metadata (see https://peps.python.org/pep-0621)
+[project]
+name = "fractal-cellpose-sam-orchestrators"
+dynamic = ["version"]
+description = "Proof-of-concept: run the Fractal Cellpose-SAM task in workflow orchestrators"
+readme = "README.md"
+license = { text = "BSD-3-Clause" }
+authors = [{ name = "Joel Lüthi" }]
+requires-python = ">=3.11,<3.15"
+
+dependencies = [
+    "pooch",
+    "requests",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "jsonschema"]
+dev = ["ruff", "pre-commit", "pytest", "jsonschema"]
+
+# ----------------
+# Ruff
+# ----------------
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "google" }
+select = [
+    "E", "W", "F",
+    "D", "D417",
+    "I",
+    "UP",
+    "C4", "B",
+    "A001",
+    "RUF",
+    "TCH", "TID",
+]
+ignore = [
+    "D401",
+    "D415",
+    "UP045",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D"]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 89
+skip-magic-trailing-comma = false
+
+# ----------------
+# Pixi
+# ----------------
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# In this repo, we install *this* package editable plus the task package from Git.
+[tool.pixi.pypi-dependencies]
+fractal-cellpose-sam-orchestrators = { path = ".", editable = true }
+
+# Fractal Cellpose SAM task
+fractal-cellpose-sam-task = { git = "https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task", tag = "v0.1.9" }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
+
+[tool.pixi.tasks]
+install-pre-commit = { cmd = ["pre-commit", "install"] }
+format-imports = { cmd = ["ruff", "check", "--select", "I", "--fix"] }
+format-code = { cmd = ["ruff", "format", "."] }
+
+
+ci-smoke = { cmd = ["python", "-m", "fractal_cellpose_sam_orchestrators.ci_smoke"] }
+
+test = { cmd = ["pytest", "./tests/"] }
+
+init = [
+    { task = "install-pre-commit", environment = "dev" },
+    { task = "format-code", environment = "dev" },
+    { task = "format-imports", environment = "dev" },
+    { task = "test", environment = "dev" },
+]
