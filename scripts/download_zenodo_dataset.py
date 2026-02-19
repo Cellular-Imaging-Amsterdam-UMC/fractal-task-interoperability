@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Download and extract the Zenodo MIP OME-Zarr dataset used for interoperability tests.
+"""Download and extract the Zenodo MIP OME-Zarr dataset used for interoperability tests.
 
 Specifically downloads:
 20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr.zip
@@ -22,7 +21,6 @@ from pathlib import Path
 
 import pooch
 
-
 DOI = "10.5281/zenodo.13305156"
 DOI_SLUG = DOI.replace("/", "_").replace(".", "_")
 
@@ -42,8 +40,7 @@ DEFAULT_CACHE_DIR = pooch.os_cache("fractal-cellpose-sam-orchestrators") / DOI_S
 
 
 def download_and_extract(outdir: Path, cache_dir: Path | None = None) -> Path:
-    """
-    Download and extract the MIP OME-Zarr dataset.
+    """Download and extract the MIP OME-Zarr dataset.
 
     Parameters
     ----------
@@ -53,7 +50,7 @@ def download_and_extract(outdir: Path, cache_dir: Path | None = None) -> Path:
     cache_dir : Path, optional
         Cache directory used by pooch. Defaults to platform cache.
 
-    Returns
+    Returns:
     -------
     Path
         Path to extracted .zarr directory.

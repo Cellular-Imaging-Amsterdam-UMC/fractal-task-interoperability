@@ -53,6 +53,7 @@ ignore = [
     "D401",
     "D415",
     "UP045",
+    "D103",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -77,6 +78,12 @@ fractal-cellpose-sam-orchestrators = { path = ".", editable = true }
 # Fractal Cellpose SAM task
 fractal-cellpose-sam-task = { git = "https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task", tag = "v0.1.9" }
 
+# Dev tools (ruff, pre-commit) live only in the dev environment.
+[tool.pixi.feature.dev.dependencies]
+ruff = "*"
+pre-commit = "*"
+pytest = "*"
+
 # Nextflow lives in its own isolated environment — no need to mix it with
 # the Python/task dependencies. Nextflow is on bioconda, not conda-forge.
 [tool.pixi.feature.nextflow]
@@ -92,9 +99,9 @@ test = { features = ["test"], solve-group = "default" }
 nextflow = { features = ["nextflow"], solve-group = "nextflow" }
 
 [tool.pixi.tasks]
-install-pre-commit = { cmd = ["pre-commit", "install"] }
-format-imports = { cmd = ["ruff", "check", "--select", "I", "--fix"] }
-format-code = { cmd = ["ruff", "format", "."] }
+install-pre-commit = { cmd = ["pre-commit", "install"], default-environment = "dev" }
+format-imports = { cmd = ["ruff", "check", "--select", "I", "--fix"], default-environment = "dev" }
+format-code = { cmd = ["ruff", "format", "."], default-environment = "dev" }
 
 
 cpsam-python = { cmd = ["python", "examples/python/run_cellpose_sam_python_script.py"] }
@@ -102,7 +109,7 @@ cpsam-cli = { cmd = ["bash", "examples/cli/run_cellpose_sam_cli.sh"] }
 download-nextflow-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_nextflow"] }
 cpsam-nextflow = { cmd = ["nextflow", "run", "examples/nextflow/main.nf", "-profile", "pixi"], default-environment = "nextflow", depends-on = ["download-nextflow-data"] }
 
-test = { cmd = ["pytest", "./tests/"] }
+test = { cmd = ["pytest", "./tests/"], default-environment = "dev" }
 
 init = [
     { task = "install-pre-commit", environment = "dev" },

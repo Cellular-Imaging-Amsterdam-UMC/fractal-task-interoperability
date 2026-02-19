@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Run fractal-cellpose-sam-task via Python
+"""Run fractal-cellpose-sam-task via Python
 
 Typical use (from the repo root):
   pixi run python examples/python/run_cellpose_sam_python_script.py
@@ -15,25 +14,22 @@ from pathlib import Path
 # Allow importing the shared download utility from scripts/
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
-from ngio import open_ome_zarr_container
-
+from download_zenodo_dataset import download_and_extract
 from fractal_cellpose_sam_task.cellpose_sam_segmentation_task import (
     cellpose_sam_segmentation_task,
 )
-
 from fractal_cellpose_sam_task.pre_post_process import (
     PrePostProcessConfiguration,
 )
-
 from fractal_cellpose_sam_task.utils import (
     AdvancedCellposeParameters,
     CellposeChannels,
     SkipCreateMaskingRoiTable,
 )
-
-from download_zenodo_dataset import download_and_extract
+from ngio import open_ome_zarr_container
 
 logger = logging.getLogger("run_cellpose_sam_python")
+
 
 def main() -> int:
     logging.basicConfig(
