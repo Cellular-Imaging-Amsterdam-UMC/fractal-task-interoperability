@@ -1,0 +1,45 @@
+# ----------------
+# Pixi environment
+# ----------------
+.pixi/
+
+# ----------------
+# Data directories (large datasets, downloaded on demand)
+# ----------------
+data*/
+
+# ----------------
+# Python
+# ----------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# ----------------
+# Nextflow
+# ----------------
+.nextflow/
+.nextflow.log*
+work/
+
+# ----------------
+# macOS
+# ----------------
+.DS_Store
+
+# ----------------
+# Editors
+# ----------------
+.vscode/
+
+# ----------------
+# Claude Code
+# ----------------
+.claude/settings.local.json

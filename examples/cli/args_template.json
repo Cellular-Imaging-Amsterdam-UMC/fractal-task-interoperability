@@ -1,0 +1,9 @@
+{
+    "zarr_url": "/path/to/zarr/B/03/0",
+    "channels": {
+        "mode": "label",
+        "identifiers": ["DAPI"]
+    },
+    "label_name": "nuclei_cli",
+    "overwrite": true
+}

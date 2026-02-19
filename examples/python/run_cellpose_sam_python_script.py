@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
 """
-Run fractal-cellpose-sam-task (v0.1.9) via Python import (not via CLI wrapper).
+Run fractal-cellpose-sam-task via Python
 
-Typical use (after downloading/copying the zarr to a writable location):
-  python scripts/run_cellpose_sam_python_script.py \
-    --zarr work/data/20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr \
-    --channel-mode index --channel-ids 0 \
-    --label-name cells
-
-Notes
------
-- This task writes labels into the input OME-Zarr (Fractal-style "in place").
-- For CI, ensure you run on a *copy* of the dataset, not the cached original.
-- By default, we use the first channel if you don't specify one.
+Typical use (from the repo root):
+  pixi run python examples/python/run_cellpose_sam_python_script.py
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
+
+# Allow importing the shared download utility from scripts/
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from ngio import open_ome_zarr_container
 
