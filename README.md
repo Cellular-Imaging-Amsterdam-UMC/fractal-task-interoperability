@@ -21,6 +21,7 @@ each writing its output label into a separate data directory.
 | CLI | `examples/cli/run_cellpose_sam_cli.sh` | `nuclei_cli` | `data_cli/` |
 | Nextflow | `examples/nextflow/main.nf` | `nuclei_nextflow` | `data_nextflow/` |
 | Snakemake | `examples/snakemake/Snakefile` | `nuclei_snakemake` | `data_snakemake/` |
+| BIAFLOWS | `wrapper.py` | `nuclei_segmentation` | `data_out/` |
 
 ### Python import example
 
@@ -108,13 +109,58 @@ snakemake --snakefile examples/snakemake/Snakefile --cores 4 \
     --configfile my_config.yaml
 ```
 
+### BIAFLOWS example
+
+Integrates the fractal-cellpose-sam task with the BIAFLOWS platform for 
+workflow management and execution on computing clusters.
+
+The BIAFLOWS integration provides:
+- **ZARR folder processing**: Direct processing of ZARR files in a folder
+- **Parameter management**: Full parameter control through BIAFLOWS interface  
+- **Containerization**: Compatible with container environments like Singularity
+
+**Files**:
+- [`wrapper.py`](wrapper.py) - BIAFLOWS wrapper script
+- [`descriptor.json`](descriptor.json) - Parameter definitions for BIAFLOWS
+- [`Dockerfile`](Dockerfile) - Container definition for deployment
+
+**Usage with Singularity**:
+```bash
+singularity run --nv "$IMAGE_PATH/$SINGULARITY_IMAGE" \
+    --infolder "$DATA_PATH/data/in" \
+    --outfolder "$DATA_PATH/data/out" \
+    --gtfolder "$DATA_PATH/data/gt" \
+    --local \
+    --nuc_channel 0 --diameter 30 --use_gpu true \
+    -nmc
+```
+
+**Key Parameters**:
+- `nuc_channel`: Channel index for segmentation (default: 0)
+- `diameter`: Expected cell diameter in pixels (default: 30)
+- `cellprob_threshold`: Cell probability threshold (default: 0.0)
+- `use_gpu`: Enable GPU acceleration (default: true)
+- `cp_model`: Cellpose model to use (default: "cpsam")
+
+The workflow automatically:
+1. Discovers ZARR files in the input directory
+2. Copies them to the output directory  
+3. Runs fractal-cellpose-sam segmentation
+4. Adds segmentation labels to the output ZARR files
+
+**Building the container**:
+```bash
+docker build -t fractal-cellpose-sam-biaflows .
+singularity build fractal-cellpose-sam-biaflows.sif docker-daemon://fractal-cellpose-sam-biaflows:latest
+```
+
 ## Installation
 
 This project uses [pixi](https://pixi.sh) for environment management.
 
 ```bash
 # Install pixi (if not already installed)
-curl -fsSL https://pixi.sh/install.sh | sh
+curl -fsSL https://pixi.sh/install.sh | bash
 
 # Install all dependencies (including fractal-cellpose-sam-task from GitHub)
 # This also installs Nextflow in an isolated pixi environment.
@@ -127,3 +173,8 @@ Pixi manages two isolated environments:
 
 If you prefer to use a standalone Nextflow installation instead, see the
 [Nextflow installation docs](https://www.nextflow.io/docs/latest/install.html).
+
+For BIAFLOWS integration, additional dependencies are installed in the Docker container:
+- `biaflows-utilities` — BIAFLOWS framework integration
+- `zarr` and `ngio` — ZARR file handling
+- `tifffile` — Image format compatibility
