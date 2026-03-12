@@ -1,6 +1,9 @@
 # Use Ubuntu base with conda for environment management (following W_Segmentation-Cellpose4 pattern)
 FROM ubuntu:22.04
 
+# Build arguments
+ARG VERSION=0.1.0
+
 # Set environment variables to prevent interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -67,6 +70,9 @@ ENV PATH="/root/.pixi/bin:$PATH"
 # Set up application directory for fractal (BIAFLOWS standard)
 WORKDIR /app
 COPY . /app/
+
+# Set version for setuptools-scm to avoid git dependency during build
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_FRACTAL_TASK_INTEROPERABILITY=${VERSION}
 
 # Run pixi install to get all fractal dependencies in pixi environment
 RUN pixi install
