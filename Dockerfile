@@ -74,7 +74,7 @@ COPY . /app/
 # Set version for setuptools-scm to avoid git dependency during build
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_FRACTAL_TASK_INTEROPERABILITY=${VERSION}
 
-# Run pixi install to get all fractal dependencies in pixi environment
+# Run pixi install for dev environment (contains fractal dependencies)
 RUN pixi install
 
 # Clean up conda cache

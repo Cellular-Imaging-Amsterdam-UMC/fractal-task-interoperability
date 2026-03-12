@@ -1,0 +1,27 @@
+# Exclude large directories and files
+test_data/
+.pixi/
+.git/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+.env
+.DS_Store
+Thumbs.db
+*.log
+build/
+dist/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

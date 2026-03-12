@@ -69,15 +69,15 @@ platforms = ["osx-arm64", "linux-64"]
 # In this repo, we install *this* package editable plus the task package from Git.
 [tool.pixi.pypi-dependencies]
 fractal-task-interoperability = { path = ".", editable = true }
-
-# Fractal Cellpose SAM task
 fractal-cellpose-sam-task = { git = "https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task", tag = "v0.1.9" }
 
-# Dev tools (ruff, pre-commit) live only in the dev environment.
+# Dev tools (ruff, pre-commit) and heavy fractal dependencies live in the dev environment.
 [tool.pixi.feature.dev.dependencies]
 ruff = "*"
 pre-commit = "*"
 pytest = "*"
+
+
 
 # Nextflow lives in its own isolated environment — no need to mix it with
 # the Python/task dependencies. Nextflow is on bioconda, not conda-forge.
@@ -98,7 +98,7 @@ default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
 nextflow = { features = ["nextflow"], solve-group = "nextflow" }
-snakemake = { features = ["snakemake"], solve-group = "default" }
+snakemake = { features = ["snakemake"], solve-group = "snakemake" }
 
 [tool.pixi.tasks]
 install-pre-commit = { cmd = ["pre-commit", "install"], default-environment = "dev" }

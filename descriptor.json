@@ -5,7 +5,7 @@
     "image": "cellularimagingcf/fractal-cellpose-sam-biaflows",
     "type": "docker"
   },
-  "command-line": "python wrapper.py CYTOMINE_HOST CYTOMINE_PUBLIC_KEY CYTOMINE_PRIVATE_KEY CYTOMINE_ID_PROJECT CYTOMINE_ID_SOFTWARE NUC_CHANNEL DIAMETER CELLPROB_THRESHOLD FLOW_THRESHOLD MIN_SIZE USE_GPU CP_MODEL LABEL_NAME",
+  "command-line": "python wrapper.py CYTOMINE_HOST CYTOMINE_PUBLIC_KEY CYTOMINE_PRIVATE_KEY CYTOMINE_ID_PROJECT CYTOMINE_ID_SOFTWARE NUC_CHANNEL DIAMETER PROB_THRESHOLD FLOW_THRESHOLD MIN_SIZE USE_GPU CP_MODEL LABEL_NAME EXCLUDE_ON_EDGES DO_3D ANISOTROPY NORMALIZE",
   "inputs": [
     {
       "id": "cytomine_host",
@@ -68,8 +68,8 @@
       "value-key": "@ID",
       "command-line-flag": "--@id",
       "name": "Cell diameter",
-      "description": "Expected cell diameter in pixels (if 0 cellpose will estimate for each image)",
-      "default-value": 30,
+      "description": "Expected cell diameter in pixels (must be > 0)",
+      "default-value": 200,
       "set-by-server": false,
       "optional": true,
       "type": "Number"
@@ -135,7 +135,7 @@
       "command-line-flag": "--@id",
       "name": "Output label name",
       "description": "Name for the output segmentation label in the ZARR file",
-      "default-value": "nuclei_segmentation",
+      "default-value": "fractal_cellpose_sam_segmentation",
       "set-by-server": false,
       "optional": true,
       "type": "String"
