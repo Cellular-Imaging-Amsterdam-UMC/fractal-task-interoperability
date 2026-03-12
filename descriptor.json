@@ -75,12 +75,12 @@
       "type": "Number"
     },
     {
-      "id": "cellprob_threshold",
+      "id": "prob_threshold",
       "value-key": "@ID",
       "command-line-flag": "--@id",
-      "name": "Cell probability threshold",
-      "description": "Probability threshold for cell detection, centered at 0.0",
-      "default-value": 0.0,
+      "name": "Probability threshold, centered at 0.0",
+      "description": "Probability threshold, centered at 0.0",
+      "default-value": 0.5,
       "set-by-server": false,
       "optional": true,
       "type": "Number"
@@ -90,7 +90,7 @@
       "value-key": "@ID",
       "command-line-flag": "--@id",
       "name": "Flow threshold",
-      "description": "Flow error threshold, 0 turns off this optional QC step",
+      "description": "Flow error threshold, 0 turns off this optional QC step. Default: 0.4",
       "default-value": 0.4,
       "set-by-server": false,
       "optional": true,
@@ -169,28 +169,6 @@
       "name": "Anisotropy",
       "description": "Anisotropy of volume in 3D (e.g. 2.0 if Z is sampled half as dense as X or Y)",
       "default-value": 1.0,
-      "set-by-server": false,
-      "optional": true,
-      "type": "Number"
-    },
-    {
-      "id": "batch_size",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Batch size",
-      "description": "Number of images to process in parallel (for tiled processing)",
-      "default-value": 8,
-      "set-by-server": false,
-      "optional": true,
-      "type": "Number"
-    },
-    {
-      "id": "tile_overlap",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Tile overlap",
-      "description": "Overlap between tiles as fraction of tile size (for large images)",
-      "default-value": 0.1,
       "set-by-server": false,
       "optional": true,
       "type": "Number"

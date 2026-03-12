@@ -63,7 +63,7 @@ def run_fractal_segmentation(zarr_path, params, bj):
     # Get parameters
     nuc_channel = getattr(params, 'nuc_channel', 0)
     diameter = getattr(params, 'diameter', 30)
-    cellprob_threshold = getattr(params, 'cellprob_threshold', 0.0)
+    prob_threshold = getattr(params, 'prob_threshold', 0.5)
     flow_threshold = getattr(params, 'flow_threshold', 0.4)
     min_size = getattr(params, 'min_size', 15)
     use_gpu = getattr(params, 'use_gpu', True)
@@ -82,7 +82,7 @@ def run_fractal_segmentation(zarr_path, params, bj):
         f"--nuc_channel {nuc_channel} "
         f"--label_name '{label_name}' "
         f"--diameter {diameter} "
-        f"--cellprob_threshold {cellprob_threshold} "
+        f"--prob_threshold {prob_threshold} "
         f"--flow_threshold {flow_threshold} "
         f"--min_size {min_size} "
         f"--cp_model '{model_type}' "
@@ -136,7 +136,7 @@ def main(argv):
             # Get parameters from BIAFLOWS job
             nuc_channel = getattr(bj.parameters, 'nuc_channel', 0)
             diameter = getattr(bj.parameters, 'diameter', 30)
-            cellprob_threshold = getattr(bj.parameters, 'cellprob_threshold', 0.0)
+            prob_threshold = getattr(bj.parameters, 'prob_threshold', 0.5)
             flow_threshold = getattr(bj.parameters, 'flow_threshold', 0.4)
             min_size = getattr(bj.parameters, 'min_size', 15)
             use_gpu = getattr(bj.parameters, 'use_gpu', True)
@@ -145,15 +145,13 @@ def main(argv):
             exclude_on_edges = getattr(bj.parameters, 'exclude_on_edges', False)
             do_3D = getattr(bj.parameters, 'do_3D', False)
             anisotropy = getattr(bj.parameters, 'anisotropy', 1.0)
-            batch_size = getattr(bj.parameters, 'batch_size', 8)
-            tile_overlap = getattr(bj.parameters, 'tile_overlap', 0.1)
             normalize = getattr(bj.parameters, 'normalize', True)
             
             logger.info(f"Parameters: channel={nuc_channel}, diameter={diameter}, "
-                       f"cellprob_threshold={cellprob_threshold}, flow_threshold={flow_threshold}, "
+                       f"prob_threshold={prob_threshold}, flow_threshold={flow_threshold}, "
                        f"min_size={min_size}, use_gpu={use_gpu}, model={model_type}, "
                        f"exclude_on_edges={exclude_on_edges}, do_3D={do_3D}, anisotropy={anisotropy}, "
-                       f"batch_size={batch_size}, normalize={normalize}")
+                       f"normalize={normalize}")
             
             # Prepare data
             bj.job.update(status=10, statusComment="Preparing data...")

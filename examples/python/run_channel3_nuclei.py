@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--nuc_channel", type=int, default=0, help="Channel index for segmentation")
     parser.add_argument("--label_name", default="nuclei_segmentation", help="Output label name")
     parser.add_argument("--diameter", type=int, default=30, help="Cell diameter")
-    parser.add_argument("--cellprob_threshold", type=float, default=0.0, help="Cell probability threshold")
+    parser.add_argument("--prob_threshold", type=float, default=0.5, help="Cell probability threshold")
     parser.add_argument("--flow_threshold", type=float, default=0.4, help="Flow threshold")
     parser.add_argument("--min_size", type=int, default=15, help="Minimum size")
     parser.add_argument("--use_gpu", action="store_true", help="Use GPU")
@@ -42,7 +42,7 @@ def main():
     # Set up advanced parameters
     advanced = AdvancedCellposeParameters(
         diameter=args.diameter,
-        cellprob_threshold=args.cellprob_threshold,
+        cellprob_threshold=args.prob_threshold,
         flow_threshold=args.flow_threshold,
         min_size=args.min_size,
         use_gpu=args.use_gpu,
