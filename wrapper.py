@@ -75,9 +75,13 @@ def run_fractal_segmentation(zarr_path, params, bj):
     normalize = getattr(params, 'normalize', True)
     
     # Build command to run the fractal script with parameters
+    # Use conda to activate the pixi-created environment directly (bypasses pixi binary issues in Singularity)
     cmd = [
         "bash", "-c",
-        f"cd /app && pixi run python examples/python/run_channel3_nuclei.py "
+        f"source /opt/conda/etc/profile.d/conda.sh && "
+        f"conda activate /app/.pixi/envs/default && "
+        f"cd /app && "
+        f"python examples/python/run_channel3_nuclei.py "
         f"--zarr_url '{str(zarr_path)}' "
         f"--nuc_channel {nuc_channel} "
         f"--label_name '{label_name}' "
