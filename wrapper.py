@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-BIAFLOWS wrapper for fractal-cellpose-sam segmentation
+Minimal wrapper for fractal-cellpose-sam segmentation
 
-This wrapper integrates the fractal-cellpose-sam library with the BIAFLOWS framework
-to process ZARR files with Cellpose-SAM segmentation.
+This wrapper runs the fractal-cellpose-sam library on ZARR files,
+without biaflows dependencies - parsing parameters directly from command line.
 """
 
 import os
@@ -13,17 +13,16 @@ import sys
 import shutil
 import logging
 import subprocess
+import argparse
+import json
 from pathlib import Path
-
-from biaflows import CLASS_OBJSEG
-from biaflows.helpers import BiaflowsJob, prepare_data
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("fractal_biaflows_wrapper")
+logger = logging.getLogger("fractal_wrapper")
 
 
 def find_zarr_files(input_path):
@@ -57,183 +56,192 @@ def copy_zarr_to_output(zarr_path, output_dir):
     return output_zarr
 
 
-def run_fractal_segmentation(zarr_path, params, bj):
-    """Run fractal-cellpose-sam via pixi calling the proper script"""
+def run_algorithm(zarr_path, params, script_path="examples/python/run_channel3_nuclei.py"):
+    """Generic function to run algorithm script via pixi with parsed parameters"""
     
-    # Get parameters
-    nuc_channel = getattr(params, 'nuc_channel', 0)
-    diameter = getattr(params, 'diameter', 30)
-    prob_threshold = getattr(params, 'prob_threshold', 0.5)
-    flow_threshold = getattr(params, 'flow_threshold', 0.4)
-    min_size = getattr(params, 'min_size', 15)
-    use_gpu = getattr(params, 'use_gpu', True)
-    model_type = getattr(params, 'cp_model', 'cpsam')
-    label_name = getattr(params, 'label_name', 'nuclei_segmentation')
-    do_3D = getattr(params, 'do_3D', False)
-    anisotropy = getattr(params, 'anisotropy', 1.0)
-    exclude_on_edges = getattr(params, 'exclude_on_edges', False)
-    normalize = getattr(params, 'normalize', True)
+    # Build base command
+    cmd = ["pixi", "run", "python", script_path, "--zarr_url", str(zarr_path)]
     
-    # Build command to run the fractal script with parameters
-    # Use conda to activate the pixi-created environment directly (bypasses pixi binary issues in Singularity)
-    cmd = [
-        "bash", "-c",
-        f"source /opt/conda/etc/profile.d/conda.sh && "
-        f"conda activate /app/.pixi/envs/default && "
-        f"cd /app && "
-        f"python examples/python/run_channel3_nuclei.py "
-        f"--zarr_url '{str(zarr_path)}' "
-        f"--nuc_channel {nuc_channel} "
-        f"--label_name '{label_name}' "
-        f"--diameter {diameter} "
-        f"--prob_threshold {prob_threshold} "
-        f"--flow_threshold {flow_threshold} "
-        f"--min_size {min_size} "
-        f"--cp_model '{model_type}' "
-        f"--anisotropy {anisotropy} "
-        f"{'--use_gpu' if use_gpu else ''} "
-        f"{'--do_3D' if do_3D else ''} "
-        f"{'--exclude_on_edges' if exclude_on_edges else ''} "
-        f"{'--normalize' if normalize else ''}"
-    ]
+    # Add all algorithm-specific parameters (skip standard workflow params)
+    standard_params = {"infolder", "outfolder", "gtfolder", "local", "nmc"}
     
-    bj.job.update(
-        progress=50,
-        statusComment=f"Running fractal segmentation on {zarr_path.name}"
-    )
+    for param_name, param_value in vars(params).items():
+        if param_name in standard_params:
+            continue
+            
+        # Convert parameter name to command line flag
+        flag = f"--{param_name}"
+        
+        # Handle different parameter types
+        if isinstance(param_value, bool):
+            if param_value:  # Only add flag if True
+                cmd.append(flag)
+        else:
+            cmd.extend([flag, str(param_value)])
     
-    logger.info(f"Running command: {cmd[2]}")
+    logger.info(f"Running command: {' '.join(cmd)}")
     
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode != 0:
-            error_msg = f"Fractal segmentation failed with exit code {result.returncode}"
+            error_msg = f"Algorithm failed with exit code {result.returncode}"
             error_msg += f"\nSTDOUT: {result.stdout}"
             error_msg += f"\nSTDERR: {result.stderr}"
             logger.error(error_msg)
             raise RuntimeError(error_msg)
         
-        logger.info("Fractal segmentation completed successfully")
+        logger.info("Algorithm completed successfully")
         logger.info(f"STDOUT: {result.stdout}")
         
         return True
         
-    except subprocess.TimeoutExpired:
-        error_msg = "Fractal segmentation timed out after 1 hour"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
     except Exception as e:
-        error_msg = f"Error running fractal segmentation: {str(e)}"
+        error_msg = f"Error running algorithm: {str(e)}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 
 
-def main(argv):
-    """Main BIAFLOWS wrapper function"""
-    # Base path is mandatory for Singularity containers
-    os.getenv("HOME")  # Ensure HOME is defined
-    problem_cls = CLASS_OBJSEG
-    logger.info(f"argv={argv}")
-    with BiaflowsJob.from_cli(argv) as bj:
-        try:
-            # Get parameters from BIAFLOWS job
-            nuc_channel = getattr(bj.parameters, 'nuc_channel', 0)
-            diameter = getattr(bj.parameters, 'diameter', 30)
-            prob_threshold = getattr(bj.parameters, 'prob_threshold', 0.5)
-            flow_threshold = getattr(bj.parameters, 'flow_threshold', 0.4)
-            min_size = getattr(bj.parameters, 'min_size', 15)
-            use_gpu = getattr(bj.parameters, 'use_gpu', True)
-            model_type = getattr(bj.parameters, 'cp_model', 'cpsam')
-            label_name = getattr(bj.parameters, 'label_name', 'nuclei_segmentation')
-            exclude_on_edges = getattr(bj.parameters, 'exclude_on_edges', False)
-            do_3D = getattr(bj.parameters, 'do_3D', False)
-            anisotropy = getattr(bj.parameters, 'anisotropy', 1.0)
-            normalize = getattr(bj.parameters, 'normalize', True)
+def load_descriptor():
+    """Load descriptor.json to automatically configure argument parser"""
+    script_dir = Path(__file__).parent
+    descriptor_path = script_dir / "descriptor.json"
+    
+    if not descriptor_path.exists():
+        raise FileNotFoundError(f"descriptor.json not found at {descriptor_path}")
+    
+    with open(descriptor_path, 'r') as f:
+        return json.load(f)
+
+
+def create_parser_from_descriptor():
+    """Create argument parser: standard workflow params + algorithm-specific from descriptor.json"""
+    descriptor = load_descriptor()
+    parser = argparse.ArgumentParser(description=descriptor.get("description", "Fractal wrapper"))
+    
+    # Standard workflow parameters (always present for backward compatibility)
+    parser.add_argument("--infolder", required=True, help="Input folder containing data")
+    parser.add_argument("--outfolder", required=True, help="Output folder for results")
+    parser.add_argument("--gtfolder", help="Ground truth folder (optional)")
+    parser.add_argument("--local", action="store_true", help="Local mode (compatibility)")
+    parser.add_argument("-nmc", action="store_true", help="No model cache (compatibility)")
+    
+    # Standard workflow param IDs to skip when processing descriptor
+    standard_params = {"infolder", "outfolder", "gtfolder", "local", "nmc"}
+    
+    # Algorithm-specific parameters from descriptor.json
+    for input_spec in descriptor.get("inputs", []):
+        arg_id = input_spec["id"]
+        
+        # Skip standard workflow parameters
+        if arg_id in standard_params:
+            continue
             
-            logger.info(f"Parameters: channel={nuc_channel}, diameter={diameter}, "
-                       f"prob_threshold={prob_threshold}, flow_threshold={flow_threshold}, "
-                       f"min_size={min_size}, use_gpu={use_gpu}, model={model_type}, "
-                       f"exclude_on_edges={exclude_on_edges}, do_3D={do_3D}, anisotropy={anisotropy}, "
-                       f"normalize={normalize}")
-            
-            # Prepare data
-            bj.job.update(status=10, statusComment="Preparing data...")
-            # Pass the folder arguments explicitly from the job to prepare_data
-            in_imgs, gt_imgs, in_path, gt_path, out_path, tmp_path = prepare_data(
-                problem_cls, bj, is_2d=not do_3D,
-                infolder=bj.flags.get('infolder'),
-                outfolder=bj.flags.get('outfolder'), 
-                gtfolder=bj.flags.get('gtfolder')
-            )
-            
-            logger.info(f"Paths from prepare_data: in_path={in_path}, out_path={out_path}")
-            
-            # Find all ZARR files in input directory
-            bj.job.update(status=20, statusComment="Searching for ZARR files...")
-            zarr_files = find_zarr_files(in_path)
-            
-            if not zarr_files:
-                bj.job.update(status=100, statusComment="No ZARR files found in input directory")
-                logger.warning("No ZARR files found in input directory")
-                return
-            
-            bj.job.update(status=25, statusComment=f"Found {len(zarr_files)} ZARR files to process")
-            
-            # Process each ZARR file
-            total_files = len(zarr_files)
-            processed_count = 0
-            
-            for i, zarr_file in enumerate(zarr_files):
-                base_progress = 30 + int((i / total_files) * 50)  # Progress from 30% to 80%
-                
-                try:
-                    bj.job.update(
-                        status=base_progress,
-                        statusComment=f"Processing {zarr_file.name} ({i+1}/{total_files})"
-                    )
-                    
-                    # Copy ZARR file to output directory first
-                    output_zarr = copy_zarr_to_output(zarr_file, out_path)
-                    
-                    # Run fractal cellpose segmentation on the output copy via subprocess
-                    bj.job.update(
-                        status=base_progress + 5,
-                        statusComment=f"Running fractal segmentation on {zarr_file.name}"
-                    )
-                    
-                    # Use subprocess approach like W_Segmentation-Cellpose4
-                    run_fractal_segmentation(output_zarr, bj.parameters, bj)
-                    
-                    processed_count += 1
-                    logger.info(f"Successfully processed {zarr_file.name}")
-                    
-                except Exception as e:
-                    logger.error(f"Error processing {zarr_file.name}: {str(e)}")
-                    bj.job.update(
-                        status=base_progress,
-                        statusComment=f"Error processing {zarr_file.name}: {str(e)}"
-                    )
-                    # Continue with next file instead of failing completely
-                    continue
-            
-            # Final status
-            if processed_count == total_files:
-                bj.job.update(
-                    status=100, 
-                    statusComment=f"Segmentation completed successfully. Processed {processed_count}/{total_files} files."
-                )
+        flag = input_spec.get("command-line-flag", f"--{arg_id}")
+        name = input_spec.get("name", arg_id)
+        description = input_spec.get("description", "")
+        input_type = input_spec.get("type", "String")
+        default_value = input_spec.get("default-value")
+        optional = input_spec.get("optional", True)
+        
+        # Convert boutiques type to Python type
+        if input_type == "Number":
+            # Check if it's likely an integer based on default value
+            if isinstance(default_value, int) or (isinstance(default_value, float) and default_value.is_integer()):
+                arg_type = int
             else:
-                bj.job.update(
-                    status=100, 
-                    statusComment=f"Segmentation completed with warnings. Processed {processed_count}/{total_files} files."
-                )
+                arg_type = float
+        elif input_type == "Boolean":
+            arg_type = None  # Will use action="store_true"
+        else:
+            arg_type = str
+        
+        # Add argument to parser
+        if input_type == "Boolean":
+            parser.add_argument(
+                flag,
+                action="store_true",
+                help=f"{name}: {description}",
+                default=bool(default_value) if default_value is not None else False
+            )
+        else:
+            parser.add_argument(
+                flag,
+                type=arg_type,
+                required=not optional,
+                default=default_value,
+                help=f"{name}: {description}"
+            )
+    
+    return parser
+
+
+def parse_args():
+    """Parse command line arguments from descriptor.json"""
+    parser = create_parser_from_descriptor()
+    return parser.parse_args()
+
+
+def main():
+    """Main wrapper function"""
+    logger.info(f"Starting fractal-cellpose-sam wrapper")
+    
+    # Parse command line arguments
+    args = parse_args()
+    logger.info(f"Arguments: {args}")
+    
+    try:
+        # Set up paths
+        in_path = Path(args.infolder)
+        out_path = Path(args.outfolder)
+        out_path.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Input path: {in_path}")
+        logger.info(f"Output path: {out_path}")
+            
+        # Find all ZARR files in input directory
+        logger.info("Searching for ZARR files...")
+        zarr_files = find_zarr_files(in_path)
+        
+        if not zarr_files:
+            logger.warning("No ZARR files found in input directory")
+            return
+        
+        logger.info(f"Found {len(zarr_files)} ZARR files to process")
+            
+        # Process each ZARR file
+        total_files = len(zarr_files)
+        processed_count = 0
+        
+        for i, zarr_file in enumerate(zarr_files):
+            try:
+                logger.info(f"Processing {zarr_file.name} ({i+1}/{total_files})")
                 
-        except Exception as e:
-            logger.error(f"Fatal error in main: {str(e)}")
-            bj.job.update(status=100, statusComment=f"Job failed: {str(e)}")
-            raise
+                # Copy ZARR file to output directory first
+                output_zarr = copy_zarr_to_output(zarr_file, out_path)
+                
+                # Run algorithm on the output copy
+                logger.info(f"Running algorithm on {zarr_file.name}")
+                run_algorithm(output_zarr, args)
+                
+                processed_count += 1
+                logger.info(f"Successfully processed {zarr_file.name}")
+                
+            except Exception as e:
+                logger.error(f"Error processing {zarr_file.name}: {str(e)}")
+                # Continue with next file instead of failing completely
+                continue
+        
+        # Final status
+        if processed_count == total_files:
+            logger.info(f"Segmentation completed successfully. Processed {processed_count}/{total_files} files.")
+        else:
+            logger.warning(f"Segmentation completed with warnings. Processed {processed_count}/{total_files} files.")
+            
+    except Exception as e:
+        logger.error(f"Fatal error in main: {str(e)}")
+        raise
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

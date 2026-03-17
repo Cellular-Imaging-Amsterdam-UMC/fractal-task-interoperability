@@ -1,6 +1,0 @@
-services:
-  pixi:
-    build: 
-      context: .
-      dockerfile: Dockerfile.pixi
-    working_dir: /workspace

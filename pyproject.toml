@@ -18,107 +18,31 @@ dependencies = [
     "requests",
 ]
 
-[project.optional-dependencies]
-test = ["pytest", "jsonschema"]
-dev = ["ruff", "pre-commit", "pytest", "jsonschema"]
-
 [tool.setuptools_scm]
 
 # ----------------
-# Ruff
-# ----------------
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-src = ["src"]
-
-[tool.ruff.lint]
-pydocstyle = { convention = "google" }
-select = [
-    "E", "W", "F",
-    "D", "D417",
-    "I",
-    "UP",
-    "C4", "B",
-    "A001",
-    "RUF",
-    "TCH", "TID",
-]
-ignore = [
-    "D401",
-    "D415",
-    "UP045",
-    "D103",
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["D"]
-
-[tool.ruff.format]
-docstring-code-format = true
-docstring-code-line-length = 89
-skip-magic-trailing-comma = false
-
-# ----------------
-# Pixi
+# Pixi - Minimal wrapper setup (CPU-only)
 # ----------------
 [tool.pixi.workspace]
-channels = ["conda-forge"]
-platforms = ["osx-arm64", "linux-64"]
+channels = ["conda-forge", "pytorch"]
+platforms = ["linux-64"]
 
-# In this repo, we install *this* package editable plus the task package from Git.
+[tool.pixi.dependencies]
+python = ">=3.11,<3.15"
+# Force CPU-only PyTorch from conda before any PyPI installs
+pytorch = "*"
+torchvision = "*"  
+torchaudio = "*"
+cpuonly = "*"  # This package forces CPU-only versions of pytorch
+
+# PyPI packages - fractal task will reuse the CPU-only PyTorch already installed above
 [tool.pixi.pypi-dependencies]
 fractal-task-interoperability = { path = ".", editable = true }
 fractal-cellpose-sam-task = { git = "https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task", tag = "v0.1.9" }
 
-# Dev tools (ruff, pre-commit) and heavy fractal dependencies live in the dev environment.
-[tool.pixi.feature.dev.dependencies]
-ruff = "*"
-pre-commit = "*"
-pytest = "*"
-
-
-
-# Nextflow lives in its own isolated environment — no need to mix it with
-# the Python/task dependencies. Nextflow is on bioconda, not conda-forge.
-[tool.pixi.feature.nextflow]
-channels = ["conda-forge", "bioconda"]
-
-[tool.pixi.feature.nextflow.dependencies]
-nextflow = "*"
-
-# Snakemake is installed from PyPI (not on conda-forge for osx-arm64).
-# It shares the default solve-group so it runs in the same Python environment
-# as the task — no separate conda: directive needed in the rules.
-[tool.pixi.feature.snakemake.pypi-dependencies]
-snakemake = "*"
-
-[tool.pixi.environments]
+[tool.pixi.environments] 
 default = { solve-group = "default" }
-dev = { features = ["dev"], solve-group = "default" }
-test = { features = ["test"], solve-group = "default" }
-nextflow = { features = ["nextflow"], solve-group = "nextflow" }
-snakemake = { features = ["snakemake"], solve-group = "snakemake" }
 
 [tool.pixi.tasks]
-install-pre-commit = { cmd = ["pre-commit", "install"], default-environment = "dev" }
-format-imports = { cmd = ["ruff", "check", "--select", "I", "--fix"], default-environment = "dev" }
-format-code = { cmd = ["ruff", "format", "."], default-environment = "dev" }
-
-
-cpsam-python = { cmd = ["python", "examples/python/run_cellpose_sam_python_script.py"] }
-cpsam-cli = { cmd = ["bash", "examples/cli/run_cellpose_sam_cli.sh"] }
-generate-nextflow-params = { cmd = ["python", "scripts/generate_nextflow_params.py"] }
-download-nextflow-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_nextflow"] }
-cpsam-nextflow = { cmd = ["nextflow", "run", "examples/nextflow/main.nf", "-profile", "pixi", "-params-file", "examples/nextflow/params_example.yml"], default-environment = "nextflow", depends-on = ["download-nextflow-data"] }
-download-snakemake-data = { cmd = ["python", "scripts/download_zenodo_dataset.py", "--outdir", "data_snakemake"] }
-cpsam-snakemake = { cmd = ["snakemake", "--snakefile", "examples/snakemake/Snakefile", "--cores", "1"], default-environment = "snakemake", depends-on = ["download-snakemake-data"] }
-
-test = { cmd = ["pytest", "./tests/"], default-environment = "dev" }
-
-init = [
-    { task = "install-pre-commit", environment = "dev" },
-    { task = "format-code", environment = "dev" },
-    { task = "format-imports", environment = "dev" },
-    { task = "test", environment = "dev" },
-]
+# Test the wrapper with test data
+test-wrapper = { cmd = ["python", "wrapper.py", "--infolder", "test_data/in", "--outfolder", "test_data/out", "--diameter", "30", "--nuc_channel", "0"] }

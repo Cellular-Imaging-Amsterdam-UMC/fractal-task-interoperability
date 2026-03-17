@@ -1,189 +1,132 @@
 {
   "name": "Fractal-Cellpose-SAM-Segmentation",
-  "description": "Cell segmentation using Fractal Cellpose-SAM library on ZARR files",
+  "description": "Cell segmentation using Fractal Cellpose-SAM library on ZARR files (CPU-only, minimal wrapper)",
   "container-image": {
     "image": "cellularimagingcf/fractal-cellpose-sam-biaflows",
     "type": "docker"
   },
-  "command-line": "python wrapper.py CYTOMINE_HOST CYTOMINE_PUBLIC_KEY CYTOMINE_PRIVATE_KEY CYTOMINE_ID_PROJECT CYTOMINE_ID_SOFTWARE NUC_CHANNEL DIAMETER PROB_THRESHOLD FLOW_THRESHOLD MIN_SIZE USE_GPU CP_MODEL LABEL_NAME EXCLUDE_ON_EDGES DO_3D ANISOTROPY NORMALIZE",
+  "command-line": "python wrapper.py --infolder [INFOLDER] --outfolder [OUTFOLDER] --gtfolder [GTFOLDER] --local -nmc --nuc_channel [NUC_CHANNEL] --diameter [DIAMETER] --prob_threshold [PROB_THRESHOLD] --flow_threshold [FLOW_THRESHOLD] --min_size [MIN_SIZE] [USE_GPU] --cp_model [CP_MODEL] --label_name [LABEL_NAME] [EXCLUDE_ON_EDGES] [DO_3D] --anisotropy [ANISOTROPY] [NORMALIZE]",
   "inputs": [
     {
-      "id": "cytomine_host",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Cytomine host",
-      "set-by-server": true,
-      "optional": false,
-      "type": "String"
-    },
-    {
-      "id": "cytomine_public_key",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Cytomine public key",
-      "set-by-server": true,
-      "optional": false,
-      "type": "String"
-    },
-    {
-      "id": "cytomine_private_key",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Cytomine private key",
-      "set-by-server": true,
-      "optional": false,
-      "type": "String"
-    },
-    {
-      "id": "cytomine_id_project",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Cytomine project ID",
-      "set-by-server": true,
-      "optional": false,
-      "type": "Number"
-    },
-    {
-      "id": "cytomine_id_software",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
-      "name": "Cytomine software ID",
-      "set-by-server": true,
-      "optional": false,
-      "type": "Number"
-    },
-    {
       "id": "nuc_channel",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[NUC_CHANNEL]",
+      "command-line-flag": "--nuc_channel",
       "name": "Channel for segmentation",
       "description": "Choose channel to segment (start at 0), -1 to use default channel",
       "default-value": 0,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "diameter",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[DIAMETER]",
+      "command-line-flag": "--diameter",
       "name": "Cell diameter",
       "description": "Expected cell diameter in pixels (must be > 0)",
       "default-value": 200,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "prob_threshold",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[PROB_THRESHOLD]",
+      "command-line-flag": "--prob_threshold",
       "name": "Probability threshold, centered at 0.0",
       "description": "Probability threshold, centered at 0.0",
       "default-value": 0.5,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "flow_threshold",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[FLOW_THRESHOLD]",
+      "command-line-flag": "--flow_threshold",
       "name": "Flow threshold",
       "description": "Flow error threshold, 0 turns off this optional QC step. Default: 0.4",
       "default-value": 0.4,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "min_size",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[MIN_SIZE]",
+      "command-line-flag": "--min_size",
       "name": "Minimum size",
       "description": "Minimum number of pixels per mask, can turn off with -1",
       "default-value": 15,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "use_gpu",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[USE_GPU]",
+      "command-line-flag": "--use_gpu",
       "name": "GPU acceleration",
-      "description": "Use GPU acceleration if available",
-      "default-value": true,
-      "set-by-server": false,
+      "description": "Use GPU acceleration if available (CPU-only in this container)",
+      "default-value": false,
       "optional": true,
       "type": "Boolean"
     },
     {
       "id": "cp_model",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[CP_MODEL]",
+      "command-line-flag": "--cp_model",
       "name": "Cellpose Model",
       "description": "Use default 'cpsam' model, or specify a custom model name/path",
       "default-value": "cpsam",
-      "set-by-server": false,
       "optional": true,
       "type": "String"
     },
     {
       "id": "label_name",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[LABEL_NAME]",
+      "command-line-flag": "--label_name",
       "name": "Output label name",
       "description": "Name for the output segmentation label in the ZARR file",
       "default-value": "fractal_cellpose_sam_segmentation",
-      "set-by-server": false,
       "optional": true,
       "type": "String"
     },
     {
       "id": "exclude_on_edges",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[EXCLUDE_ON_EDGES]",
+      "command-line-flag": "--exclude_on_edges",
       "name": "Exclude edge cells",
       "description": "Discard masks which touch edges of image",
       "default-value": false,
-      "set-by-server": false,
       "optional": true,
       "type": "Boolean"
     },
     {
       "id": "do_3D",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[DO_3D]",
+      "command-line-flag": "--do_3D",
       "name": "3D processing",
       "description": "Process images as 3D stacks",
       "default-value": false,
-      "set-by-server": false,
       "optional": true,
       "type": "Boolean"
     },
     {
       "id": "anisotropy",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[ANISOTROPY]",
+      "command-line-flag": "--anisotropy",
       "name": "Anisotropy",
       "description": "Anisotropy of volume in 3D (e.g. 2.0 if Z is sampled half as dense as X or Y)",
       "default-value": 1.0,
-      "set-by-server": false,
       "optional": true,
       "type": "Number"
     },
     {
       "id": "normalize",
-      "value-key": "@ID",
-      "command-line-flag": "--@id",
+      "value-key": "[NORMALIZE]",
+      "command-line-flag": "--normalize",
       "name": "Normalize intensities",
       "description": "Normalize image intensities before segmentation",
       "default-value": true,
-      "set-by-server": false,
       "optional": true,
       "type": "Boolean"
     }
   ],
-  "schema-version": "cytomine-0.1"
+  "schema-version": "boutiques-0.5"
 }
