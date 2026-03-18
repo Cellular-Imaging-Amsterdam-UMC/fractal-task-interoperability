@@ -56,7 +56,7 @@ def copy_zarr_to_output(zarr_path, output_dir):
     return output_zarr
 
 
-def run_algorithm(zarr_path, params, script_path="examples/python/run_fractal_cellpose.py"):
+def run_algorithm(zarr_path, params, script_path="/app/examples/python/run_fractal_cellpose.py"):
     """Generic function to run algorithm script via pixi with parsed parameters"""
     
     # Build base command - use direct Python path for Singularity compatibility
@@ -227,6 +227,7 @@ def main():
         # Process each ZARR file
         total_files = len(zarr_files)
         processed_count = 0
+        failed_files = []
         
         for i, zarr_file in enumerate(zarr_files):
             try:
@@ -244,18 +245,22 @@ def main():
                 
             except Exception as e:
                 logger.error(f"Error processing {zarr_file.name}: {str(e)}")
-                # Continue with next file instead of failing completely
+                failed_files.append(zarr_file.name)
                 continue
         
-        # Final status
+        # Final status and exit code handling
         if processed_count == total_files:
             logger.info(f"Segmentation completed successfully. Processed {processed_count}/{total_files} files.")
         else:
-            logger.warning(f"Segmentation completed with warnings. Processed {processed_count}/{total_files} files.")
+            error_msg = f"Segmentation failed! Processed {processed_count}/{total_files} files."
+            if failed_files:
+                error_msg += f" Failed files: {', '.join(failed_files)}"
+            logger.error(error_msg)
+            sys.exit(1)  # Exit with failure code for SLURM
             
     except Exception as e:
         logger.error(f"Fatal error in main: {str(e)}")
-        raise
+        sys.exit(1)  # Exit with failure code for SLURM
 
 
 if __name__ == "__main__":
