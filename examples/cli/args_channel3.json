@@ -1,9 +1,0 @@
-{
-    "zarr_url": "/data/Cell-Granules.tif.zarr",
-    "channels": {
-        "mode": "index",
-        "identifiers": [2]
-    },
-    "label_name": "nuclei_channel3_cli",
-    "overwrite": true
-}

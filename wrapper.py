@@ -56,11 +56,11 @@ def copy_zarr_to_output(zarr_path, output_dir):
     return output_zarr
 
 
-def run_algorithm(zarr_path, params, script_path="examples/python/run_channel3_nuclei.py"):
+def run_algorithm(zarr_path, params, script_path="examples/python/run_fractal_cellpose.py"):
     """Generic function to run algorithm script via pixi with parsed parameters"""
     
-    # Build base command
-    cmd = ["pixi", "run", "python", script_path, "--zarr_url", str(zarr_path)]
+    # Build base command - use direct Python path for Singularity compatibility
+    cmd = ["/app/.pixi/envs/default/bin/python", script_path, "--zarr_url", str(zarr_path)]
     
     # Add all algorithm-specific parameters (skip standard workflow params)
     standard_params = {"infolder", "outfolder", "gtfolder", "local", "nmc"}

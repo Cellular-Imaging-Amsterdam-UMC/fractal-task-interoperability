@@ -33,6 +33,6 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_FRACTAL_TASK_INTEROPERABILITY=${VERSION}
 # Install fractal dependencies
 RUN pixi install
 
-# Simple entrypoint: run wrapper directly in pixi environment
-ENTRYPOINT ["pixi", "run", "python", "/app/wrapper.py"]
+# Simple entrypoint: use direct Python path for Singularity compatibility
+ENTRYPOINT ["/app/.pixi/envs/default/bin/python", "/app/wrapper.py"]
 CMD []
