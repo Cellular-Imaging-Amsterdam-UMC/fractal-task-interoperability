@@ -144,13 +144,15 @@ def create_parser_from_descriptor():
         default_value = input_spec.get("default-value")
         optional = input_spec.get("optional", True)
         
-        # Convert boutiques type to Python type
+        # Convert boutiques type to Python type based on default value
         if input_type == "Number":
-            # Check if it's likely an integer based on default value
-            if isinstance(default_value, int) or (isinstance(default_value, float) and default_value.is_integer()):
-                arg_type = int
+            # Smart type detection: look at default value type from JSON
+            if isinstance(default_value, int):
+                arg_type = int  # e.g., nuc_channel: 0, diameter: 200, min_size: 15
+            elif isinstance(default_value, float):
+                arg_type = float  # e.g., prob_threshold: 0.5, anisotropy: 1.0  
             else:
-                arg_type = float
+                arg_type = float  # fallback for numbers without defaults
         elif input_type == "Boolean":
             arg_type = None  # Will use action="store_true"
         else:
