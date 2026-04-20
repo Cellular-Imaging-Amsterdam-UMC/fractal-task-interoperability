@@ -1,180 +1,105 @@
-# Fractal task interoperability
+# Fractal task interoperability — BIAFLOWS wrapper
 
-This repo demonstrates that a [Fractal-spec](https://fractal-analytics-platform.github.io/tasks_spec/)
-compliant task can be invoked interoperably across different execution contexts,
-using [`fractal-cellpose-sam-task`](https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task)
-as a concrete example.
+This repo provides a [BIAFLOWS](https://biaflows.neubias.org/)-compatible wrapper
+around [`fractal-cellpose-sam-task`](https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task)
+for cell/nuclei segmentation on OME-ZARR files.
 
-The Fractal task spec defines a standard CLI interface: tasks accept
-`--args-json <path>` and `--out-json <path>` arguments, making them portable
-across any orchestrator that can run a shell command.
+The wrapper follows the standard BIAFLOWS interface (`--infolder` / `--outfolder` / `--gtfolder`)
+and discovers algorithm parameters automatically from [`descriptor.json`](descriptor.json),
+making it easy to deploy on SLURM clusters via [BIOMERO](https://github.com/NL-BioImaging/biomero).
 
-## Examples
+## How it works
 
-All three examples run the same segmentation task on the same public dataset
-([Zenodo 10.5281/zenodo.13305156](https://zenodo.org/records/13305156)),
-each writing its output label into a separate data directory.
+1. Discovers all `.zarr` files in the input directory
+2. Copies each file to the output directory
+3. Runs `fractal-cellpose-sam` segmentation on the output copy, writing labels in-place
+4. Parameters are parsed directly from `descriptor.json` at runtime — no hardcoded argument lists
 
-| Example | Entry point | Output label | Data directory |
-|---------|-------------|--------------|----------------|
-| Python import | `examples/python/run_cellpose_sam_python_script.py` | `nuclei_python_script` | `data_python/` |
-| CLI | `examples/cli/run_cellpose_sam_cli.sh` | `nuclei_cli` | `data_cli/` |
-| Nextflow | `examples/nextflow/main.nf` | `nuclei_nextflow` | `data_nextflow/` |
-| Snakemake | `examples/snakemake/Snakefile` | `nuclei_snakemake` | `data_snakemake/` |
-| BIAFLOWS | `wrapper.py` | `nuclei_segmentation` | `data_out/` |
-
-### Python import example
-
-Calls the task as a regular Python function — no CLI involved.
-
-```bash
-pixi run cpsam-python
-# or
-python examples/python/run_cellpose_sam_python_script.py
-```
-
-### CLI example
-
-Invokes the task through its Fractal CLI entry point
-(`python -m <module> --args-json ... --out-json ...`).
-This is the same interface that Fractal Server uses when it dispatches tasks
-to workers.
-
-```bash
-pixi run cpsam-cli
-# or
-bash examples/cli/run_cellpose_sam_cli.sh
-```
-
-See [examples/cli/args_template.json](examples/cli/args_template.json) for the
-task parameter schema.
-
-### Nextflow example
-
-Orchestrates the task via Nextflow, using the same CLI interface.
-Each entry in `zarr_urls` becomes a Nextflow channel item and runs as an
-independent parallel job — exactly as Fractal Server distributes parallel
-tasks across its worker pool.
-
-Task parameters are supplied via a YAML params file:
+## Files
 
 | File | Purpose |
 |------|---------|
-| [`examples/nextflow/params.yml`](examples/nextflow/params.yml) | Template with all manifest defaults (auto-generated from `__FRACTAL_MANIFEST__.json` via `pixi run generate-nextflow-params`) |
-| [`examples/nextflow/params_example.yml`](examples/nextflow/params_example.yml) | Demo configuration used by `pixi run cpsam-nextflow` |
+| [`wrapper.py`](wrapper.py) | BIAFLOWS wrapper — entry point |
+| [`descriptor.json`](descriptor.json) | Parameter definitions (Boutiques schema) |
+| [`Dockerfile`](Dockerfile) | Container definition (CPU-only, Ubuntu + pixi) |
+| [`examples/python/run_fractal_cellpose.py`](examples/python/run_fractal_cellpose.py) | Thin script called by the wrapper to invoke the fractal task |
 
-**Option A — via pixi** (no separate Nextflow install needed):
-```bash
-pixi run cpsam-nextflow
-```
-The pixi task automatically downloads the dataset to `data_nextflow/` before
-launching Nextflow.
+## Parameters
 
-**Option B — standalone Nextflow** (for users who already have Nextflow installed):
-```bash
-# Stage the dataset first
-pixi run download-nextflow-data
-# Then run the pipeline
-nextflow run examples/nextflow/main.nf -profile pixi \
-    -params-file examples/nextflow/params_example.yml
-```
+All parameters are defined in `descriptor.json` and automatically wired to the CLI.
 
-In both cases, `-profile pixi` tells Nextflow to use the pixi-managed conda
-environment (`.pixi/envs/default`) for the task processes.
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `nuc_channel` | `0` | Channel index to segment (−1 = default channel) |
+| `diameter` | `200` | Expected cell diameter in pixels |
+| `prob_threshold` | `0.5` | Cell probability threshold (centred at 0.0) |
+| `flow_threshold` | `0.4` | Flow error threshold (0 = disabled) |
+| `min_size` | `15` | Minimum pixels per mask (−1 = disabled) |
+| `use_gpu` | `false` | GPU flag (see note below — CPU-only in this container) |
+| `cp_model` | `cpsam` | Cellpose model name or path |
+| `label_name` | `nuclei_segmentation` | Name for the output label array |
+| `exclude_on_edges` | `false` | Discard masks touching image edges |
+| `do_3d` | `false` | Run 3D segmentation |
+| `anisotropy` | `1.0` | Z/XY voxel size ratio for 3D mode |
+| `normalize` | `true` | Normalise intensity before segmentation |
 
-### Snakemake example
+## Usage
 
-Orchestrates the task via Snakemake, using the same CLI interface.
-Each entry in `zarr_urls` becomes an independent Snakemake job via an integer
-index wildcard.
-
-Task parameters are supplied via a YAML config file:
-[`examples/snakemake/config_example.yaml`](examples/snakemake/config_example.yaml)
+### With Singularity (BIOMERO / SLURM)
 
 ```bash
-pixi run cpsam-snakemake
-```
-The pixi task automatically downloads the dataset to `data_snakemake/` before
-launching Snakemake.
-
-Standalone (with Snakemake already installed):
-```bash
-pixi run download-snakemake-data
-snakemake --snakefile examples/snakemake/Snakefile --cores 1
-```
-
-To run on custom data, pass your own config:
-```bash
-snakemake --snakefile examples/snakemake/Snakefile --cores 4 \
-    --configfile my_config.yaml
-```
-
-### BIAFLOWS example
-
-Integrates the fractal-cellpose-sam task with the BIAFLOWS platform for 
-workflow management and execution on computing clusters.
-
-The BIAFLOWS integration provides:
-- **ZARR folder processing**: Direct processing of ZARR files in a folder
-- **Parameter management**: Full parameter control through BIAFLOWS interface  
-- **Containerization**: Compatible with container environments like Singularity
-
-**Files**:
-- [`wrapper.py`](wrapper.py) - BIAFLOWS wrapper script
-- [`descriptor.json`](descriptor.json) - Parameter definitions for BIAFLOWS
-- [`Dockerfile`](Dockerfile) - Container definition for deployment
-
-**Usage with Singularity**:
-```bash
-singularity run --nv "$IMAGE_PATH/$SINGULARITY_IMAGE" \
+singularity run "$IMAGE_PATH/$SINGULARITY_IMAGE" \
     --infolder "$DATA_PATH/data/in" \
     --outfolder "$DATA_PATH/data/out" \
     --gtfolder "$DATA_PATH/data/gt" \
-    --local \
-    --nuc_channel 0 --diameter 30 --use_gpu true \
-    -nmc
+    --local -nmc \
+    --nuc_channel 0 --diameter 200 --cp_model cpsam
 ```
 
-**Key Parameters**:
-- `nuc_channel`: Channel index for segmentation (default: 0)
-- `diameter`: Expected cell diameter in pixels (default: 30)
-- `cellprob_threshold`: Cell probability threshold (default: 0.0)
-- `use_gpu`: Enable GPU acceleration (default: true)
-- `cp_model`: Cellpose model to use (default: "cpsam")
+### With Docker
 
-The workflow automatically:
-1. Discovers ZARR files in the input directory
-2. Copies them to the output directory  
-3. Runs fractal-cellpose-sam segmentation
-4. Adds segmentation labels to the output ZARR files
-
-**Building the container**:
 ```bash
-docker build -t fractal-cellpose-sam-biaflows .
-singularity build fractal-cellpose-sam-biaflows.sif docker-daemon://fractal-cellpose-sam-biaflows:latest
+docker run --rm \
+    -v /path/to/input:/data/in \
+    -v /path/to/output:/data/out \
+    cellularimagingcf/fractal-cellpose-sam-biaflows \
+    --infolder /data/in --outfolder /data/out \
+    --nuc_channel 0 --diameter 200
 ```
 
-## Installation
+## Building the container
+
+```bash
+docker build -t cellularimagingcf/fractal-cellpose-sam-biaflows .
+# Convert for Singularity/Apptainer:
+singularity build fractal-cellpose-sam-biaflows.sif docker-daemon://cellularimagingcf/fractal-cellpose-sam-biaflows:latest
+```
+
+## CPU-only design
+
+The container is intentionally **CPU-only** to keep the image small and broadly
+compatible. The `use_gpu` parameter is accepted (for descriptor compatibility with
+BIOMERO's parameter passing) but GPU support is not installed — Cellpose-SAM will
+run on CPU regardless of how the flag is set.
+
+To add GPU support, replace the base image with a CUDA image and install
+`torch` with CUDA extras in `pixi.toml`.
+
+## Installation (for local development)
 
 This project uses [pixi](https://pixi.sh) for environment management.
 
 ```bash
-# Install pixi (if not already installed)
+# Install pixi if not already present
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Install all dependencies (including fractal-cellpose-sam-task from GitHub)
-# This also installs Nextflow in an isolated pixi environment.
+# Install all dependencies
 pixi install
+
+# Run wrapper locally
+pixi run python wrapper.py \
+    --infolder ./test_data/in \
+    --outfolder ./test_data/out \
+    --nuc_channel 0 --diameter 200
 ```
 
-Pixi manages two isolated environments:
-- `default` — Python + the Cellpose-SAM task (used by the Python and CLI examples)
-- `nextflow` — Nextflow only (used by `pixi run cpsam-nextflow`)
-
-If you prefer to use a standalone Nextflow installation instead, see the
-[Nextflow installation docs](https://www.nextflow.io/docs/latest/install.html).
-
-For BIAFLOWS integration, additional dependencies are installed in the Docker container:
-- `biaflows-utilities` — BIAFLOWS framework integration
-- `zarr` and `ngio` — ZARR file handling
-- `tifffile` — Image format compatibility
