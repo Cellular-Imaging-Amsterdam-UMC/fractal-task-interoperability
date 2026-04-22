@@ -2,10 +2,26 @@
 # -*- coding: utf-8 -*-
 
 """
-Minimal wrapper for fractal-cellpose-sam segmentation
+BIAFLOWS-style BIOMERO wrapper for Cellpose-SAM cell segmentation
 
-This wrapper runs the fractal-cellpose-sam library on ZARR files,
-without biaflows dependencies - parsing parameters directly from command line.
+Segments cells or nuclei in OME-ZARR files using Cellpose-SAM, which
+combines Cellpose's flow-based detection with Meta's Segment Anything
+Model (SAM) for robust, generalised segmentation across diverse cell types
+and imaging conditions — without manual threshold tuning.
+
+The actual segmentation is delegated to the Fractal Analytics Platform task
+library (fractal-cellpose-sam-task), which handles OME-ZARR I/O and writes
+results as a label array under <image>.zarr/labels/<label_name>/. This
+wrapper exists to expose that task through a BIAFLOWS-compatible
+(--infolder / --outfolder / --gtfolder) interface so it can be submitted
+via BIOMERO on a SLURM cluster, or run locally without any runner.
+
+Note: unlike standard BIAFLOWS workflows, input files are expected to be
+OME-ZARR directories (not TIFF). The --gtfolder argument is accepted for
+interface compatibility but is ignored at runtime.
+
+Parameters are read from descriptor.json at runtime — no code changes are
+needed when adjusting segmentation settings.
 """
 
 import os

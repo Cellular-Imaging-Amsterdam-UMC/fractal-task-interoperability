@@ -1,6 +1,6 @@
 {
   "name": "Fractal-Cellpose-SAM-Segmentation",
-  "description": "Cell segmentation using Fractal Cellpose-SAM library on ZARR files (CPU-only, minimal wrapper)",
+  "description": "Segment cells or nuclei in OME-ZARR images using Cellpose-SAM — a combination of Cellpose's flow-based segmentation and Meta's Segment Anything Model (SAM). Ideal for high-content screening datasets where accurate, generalised cell detection is needed without manual thresholding. Segmentation is performed via the Fractal Analytics Platform task library, which handles OME-ZARR I/O and writes the result as a label array under <image>.zarr/labels/ inside the output ZARR file.",
   "container-image": {
     "image": "cellularimagingcf/fractal-cellpose-sam-biaflows",
     "type": "docker"

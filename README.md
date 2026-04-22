@@ -1,12 +1,46 @@
-# Fractal task interoperability — BIAFLOWS wrapper
+# Cellpose-SAM Cell Segmentation — BIAFLOWS-style BIOMERO wrapper using Fractal Task
 
-This repo provides a [BIAFLOWS](https://biaflows.neubias.org/)-compatible wrapper
-around [`fractal-cellpose-sam-task`](https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task)
-for cell/nuclei segmentation on OME-ZARR files.
+Automate cell and nuclei segmentation on OME-ZARR images using
+[Cellpose-SAM](https://github.com/fractal-analytics-platform/fractal-cellpose-sam-task) —
+a combination of Cellpose's flow-based detection and Meta's Segment Anything Model (SAM).
 
-The wrapper follows the standard BIAFLOWS interface (`--infolder` / `--outfolder` / `--gtfolder`)
-and discovers algorithm parameters automatically from [`descriptor.json`](descriptor.json),
-making it easy to deploy on SLURM clusters via [BIOMERO](https://github.com/NL-BioImaging/biomero).
+**Why use this?**
+Cellpose-SAM generalises well across cell types and imaging conditions without manual
+threshold tuning, making it a strong default choice for high-content screening (HCS)
+datasets. This wrapper packages it for fully automated, scalable batch processing on
+SLURM clusters via [BIOMERO](https://github.com/NL-BioImaging/biomero) — no GPU required.
+
+**How segmentation works under the hood:**
+The actual segmentation is delegated to the
+[Fractal Analytics Platform](https://fractal-analytics-platform.github.io/) task library
+(`fractal-cellpose-sam-task`). Fractal handles all OME-ZARR I/O and writes the segmentation
+result as a label array at `<image>.zarr/labels/<label_name>/` inside the output ZARR file.
+This wrapper's job is simply to expose that Fractal task through a BIAFLOWS-compatible
+interface so it integrates with BIOMERO.
+
+## Departure from the standard BIAFLOWS spec
+
+Standard BIAFLOWS workflows use a Cytomine descriptor and Cytomine-specific connection
+arguments to fetch images from a Cytomine server. **This wrapper does not follow that convention:**
+
+- The descriptor uses the **Boutiques schema** (`boutiques-0.5`) instead of the Cytomine schema,
+  because the inputs and outputs are plain file-system paths, not Cytomine objects.
+- There are **no Cytomine connection arguments** (`--cytomine_host`, `--cytomine_public_key`, …).
+- As a result, **this workflow cannot be run inside Cytomine**.
+
+It *can* be run:
+- via **BIOMERO** on a SLURM cluster (primary use case),
+- with **Docker or Singularity** directly on any machine,
+- or **locally** without any container runner (see [Local development](#installation-for-local-development)).
+
+The interface still uses the familiar BIAFLOWS folder arguments
+(`--infolder` / `--outfolder` / `--gtfolder`) for compatibility with BIOMERO's job dispatch,
+but the key difference from standard BIAFLOWS is that **input images must be OME-ZARR
+directories, not TIFF files**. Each `.zarr` directory in `--infolder` is treated as one image.
+The `--gtfolder` argument is accepted but ignored — there is no ground-truth comparison step.
+
+All segmentation parameters are defined in [`descriptor.json`](descriptor.json) and
+automatically wired to the CLI at runtime.
 
 ## How it works
 
@@ -37,7 +71,7 @@ All parameters are defined in `descriptor.json` and automatically wired to the C
 | `min_size` | `15` | Minimum pixels per mask (−1 = disabled) |
 | `use_gpu` | `false` | GPU flag (see note below — CPU-only in this container) |
 | `cp_model` | `cpsam` | Cellpose model name or path |
-| `label_name` | `nuclei_segmentation` | Name for the output label array |
+| `label_name` | `fractal_cellpose_sam_segmentation` | Name for the output label array in the ZARR file |
 | `exclude_on_edges` | `false` | Discard masks touching image edges |
 | `do_3d` | `false` | Run 3D segmentation |
 | `anisotropy` | `1.0` | Z/XY voxel size ratio for 3D mode |
